@@ -37,7 +37,7 @@ if (!NOTION_API_KEY || !NOTION_DATABASE_ID) {
   process.exit(1);
 }
 
-const notion = new Client({ auth: NOTION_API_KEY });
+const notion = new Client({ auth: NOTION_API_KEY, notionVersion: "2022-06-28" });
 
 const main = async () => {
   const database = await notion.databases.retrieve({

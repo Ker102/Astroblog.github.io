@@ -17,7 +17,10 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
+const notion = new Client({
+  auth: process.env.NOTION_API_KEY,
+  notionVersion: "2022-06-28",
+});
 const n2m = new NotionToMarkdown({ notionClient: notion });
 
 console.log("Notion publish script v20250223-1");
