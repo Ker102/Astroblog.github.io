@@ -36,6 +36,15 @@ const STATUS_PROPERTY_NAME =
   process.env.NOTION_STATUS_PROPERTY_NAME || "Status";
 const STATUS_PROPERTY_ID = process.env.NOTION_STATUS_PROPERTY_ID;
 
+const TITLE_PROPERTY_NAME =
+  process.env.NOTION_TITLE_PROPERTY_NAME || "Title";
+const DESCRIPTION_PROPERTY_NAME =
+  process.env.NOTION_DESCRIPTION_PROPERTY_NAME || "Preview Text";
+const DATE_PROPERTY_NAME =
+  process.env.NOTION_DATE_PROPERTY_NAME || "Publish Date";
+const TAGS_PROPERTY_NAME =
+  process.env.NOTION_TAGS_PROPERTY_NAME || "Tags";
+
 let resolvedStatusProperty;
 let supportsDatabasesQuery;
 
@@ -91,11 +100,19 @@ const extractText = (richText = []) =>
 
 const formatTags = (tags = []) => tags.map((tag) => tag.name);
 
-const getFrontmatter = ({ title, date, tags }) => {
+const getFrontmatter = ({ title, description, pubDate, updatedDate, tags }) => {
   const lines = ["---", `title: ${JSON.stringify(title)}`];
 
-  if (date) {
-    lines.push(`date: ${date}`);
+  if (description) {
+    lines.push(`description: ${JSON.stringify(description)}`);
+  }
+
+  if (pubDate) {
+    lines.push(`pubDate: ${pubDate}`);
+  }
+
+  if (updatedDate) {
+    lines.push(`updatedDate: ${updatedDate}`);
   }
 
   if (tags?.length) {
@@ -256,14 +273,35 @@ const updatePageStatus = async (pageId, statusType) => {
 const publishPost = async (page) => {
   const statusMeta = await resolveStatusProperty();
   const pageId = page.id;
-  const titleProperty = page.properties?.Name;
-  const title = extractText(titleProperty?.title) || "untitled";
-  const slug = slugify(title);
+  const titleProperty = page.properties?.[TITLE_PROPERTY_NAME];
+  const title = extractText(titleProperty?.title) || "";
+  if (!title) {
+    console.warn(`Skipping page ${pageId} - missing title in property "${TITLE_PROPERTY_NAME}"`);
+    return;
+  }
+  const slug = slugify(title) || slugify(page.id);
 
-  const dateProperty = page.properties?.Date;
-  const dateValue = dateProperty?.date?.start;
+  const descriptionProperty = page.properties?.[DESCRIPTION_PROPERTY_NAME];
+  const description = extractText(descriptionProperty?.rich_text) || "";
+  if (!description) {
+    console.warn(
+      `Skipping page ${pageId} - missing description in property "${DESCRIPTION_PROPERTY_NAME}"`
+    );
+    return;
+  }
 
-  const tagsProperty = page.properties?.Tags;
+  const dateProperty = page.properties?.[DATE_PROPERTY_NAME];
+  const dateValue = dateProperty?.date?.start || page.created_time;
+  if (!dateValue) {
+    console.warn(`Skipping page ${pageId} - missing publish date in property "${DATE_PROPERTY_NAME}"`);
+    return;
+  }
+  const pubDateIso = new Date(dateValue).toISOString();
+  const updatedIso = page.last_edited_time
+    ? new Date(page.last_edited_time).toISOString()
+    : undefined;
+
+  const tagsProperty = page.properties?.[TAGS_PROPERTY_NAME];
   let tags = [];
   if (tagsProperty?.type === "multi_select") {
     tags = formatTags(tagsProperty.multi_select);
@@ -275,7 +313,13 @@ const publishPost = async (page) => {
 
   const statusProperty = page.properties?.[statusMeta.key];
   const markdownBody = await convertPageToMarkdown(pageId);
-  const frontmatter = getFrontmatter({ title, date: dateValue, tags });
+  const frontmatter = getFrontmatter({
+    title,
+    description,
+    pubDate: pubDateIso,
+    updatedDate: updatedIso,
+    tags,
+  });
   const postContent = `${frontmatter}${markdownBody}\n`;
   const filePath = `${blogRoot}/${slug}.md`;
   const sha = await getExistingFileSha(filePath);
