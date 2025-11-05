@@ -147,6 +147,7 @@ const publishPost = async (page) => {
     tags = formatTags(tagsProperty.multi_select);
   }
 
+  const statusProperty = page.properties?.Status;
   const markdownBody = await convertPageToMarkdown(pageId);
   const frontmatter = getFrontmatter({ title, date: dateValue, tags });
   const postContent = `${frontmatter}${markdownBody}\n`;
@@ -187,4 +188,3 @@ main().catch((error) => {
   console.error("Publish script failed:", error);
   process.exit(1);
 });
-  const statusProperty = page.properties?.Status;
