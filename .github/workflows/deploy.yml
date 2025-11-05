@@ -1,0 +1,20 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out your repository using git
+        uses: actions/checkout@v4
+
+      - name: Install, build, and deploy
+        uses: withastro/action@v2
+        with:
+          # path: . # The root location of your Astro project inside the repository. (optional)
+          # node-version: 20 # The specific version of Node.js to use. (optional)
+          # package-manager: npm@latest # The Node.js package manager to use. (optional)
