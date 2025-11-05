@@ -31,8 +31,9 @@ const STATUS_READY = "Ready to Publish";
 const STATUS_PUBLISHED = "Published";
 const STATUS_PROPERTY_NAME =
   process.env.NOTION_STATUS_PROPERTY_NAME || "Status";
+const STATUS_PROPERTY_ID = process.env.NOTION_STATUS_PROPERTY_ID;
 
-let cachedStatusPropertyType;
+let resolvedStatusProperty;
 let supportsDatabasesQuery;
 
 const queryDatabase = async ({ database_id, filter, sorts, start_cursor, page_size }) => {
@@ -118,9 +119,11 @@ const getExistingFileSha = async (path) => {
   }
 };
 
-const resolveStatusPropertyType = async () => {
-  if (cachedStatusPropertyType) {
-    return cachedStatusPropertyType;
+const normalizeKey = (key = "") => key.trim().toLowerCase();
+
+const resolveStatusProperty = async () => {
+  if (resolvedStatusProperty) {
+    return resolvedStatusProperty;
   }
 
   const database = await notion.databases.retrieve({
@@ -128,13 +131,29 @@ const resolveStatusPropertyType = async () => {
   });
 
   const propertyEntries = Object.entries(database.properties ?? {});
-  console.log(
-    "Notion database properties:",
-    propertyEntries.map(([key, value]) => `${key} (${value.type})`).join(", ")
-  );
+  const propertySummary = propertyEntries
+    .map(([key, value]) => `${key} (${value.type}, id: ${value.id})`)
+    .join(", ");
+  console.log("Notion database properties:", propertySummary);
 
-  const property = database.properties?.[STATUS_PROPERTY_NAME];
-  if (!property) {
+  let matchedEntry = null;
+
+  if (STATUS_PROPERTY_ID) {
+    matchedEntry = propertyEntries.find(([, value]) => value.id === STATUS_PROPERTY_ID);
+    if (!matchedEntry) {
+      console.warn(
+        `Configured property id "${STATUS_PROPERTY_ID}" not found in Notion database ${process.env.NOTION_DATABASE_ID}`
+      );
+    }
+  }
+
+  if (!matchedEntry) {
+    matchedEntry = propertyEntries.find(
+      ([key]) => normalizeKey(key) === normalizeKey(STATUS_PROPERTY_NAME)
+    );
+  }
+
+  if (!matchedEntry) {
     throw new Error(
       `Property "${STATUS_PROPERTY_NAME}" not found in Notion database ${process.env.NOTION_DATABASE_ID}. Available keys: ${propertyEntries
         .map(([key]) => key)
@@ -142,15 +161,21 @@ const resolveStatusPropertyType = async () => {
     );
   }
 
-  cachedStatusPropertyType = property.type;
+  const [propertyKey, propertyValue] = matchedEntry;
+  resolvedStatusProperty = {
+    key: propertyKey,
+    id: propertyValue.id,
+    type: propertyValue.type,
+  };
   console.log(
-    `Resolved status property "${STATUS_PROPERTY_NAME}" of type "${cachedStatusPropertyType}"`
+    `Resolved status property "${propertyKey}" (id: ${propertyValue.id}) of type "${propertyValue.type}"`
   );
-  return cachedStatusPropertyType;
+
+  return resolvedStatusProperty;
 };
 
 const buildStatusFilter = async () => {
-  const type = await resolveStatusPropertyType();
+  const { type } = await resolveStatusProperty();
 
   if (type === "select") {
     return {
@@ -169,10 +194,11 @@ const buildStatusFilter = async () => {
 
 const queryReadyPages = async () => {
   const statusFilter = await buildStatusFilter();
+  const { key } = await resolveStatusProperty();
   const response = await queryDatabase({
     database_id: process.env.NOTION_DATABASE_ID,
     filter: {
-      property: STATUS_PROPERTY_NAME,
+      property: key,
       ...statusFilter,
     },
   });
@@ -205,15 +231,18 @@ const getStatusUpdatePayload = (statusType) => {
   };
 };
 
-const updatePageStatus = (pageId, statusType) =>
-  notion.pages.update({
+const updatePageStatus = async (pageId, statusType) => {
+  const { key } = await resolveStatusProperty();
+  return notion.pages.update({
     page_id: pageId,
     properties: {
-      [STATUS_PROPERTY_NAME]: getStatusUpdatePayload(statusType),
+      [key]: getStatusUpdatePayload(statusType),
     },
   });
+};
 
 const publishPost = async (page) => {
+  const statusMeta = await resolveStatusProperty();
   const pageId = page.id;
   const titleProperty = page.properties?.Name;
   const title = extractText(titleProperty?.title) || "untitled";
@@ -232,7 +261,7 @@ const publishPost = async (page) => {
     tags = formatTags(tagsProperty.multi_select);
   }
 
-  const statusProperty = page.properties?.[STATUS_PROPERTY_NAME];
+  const statusProperty = page.properties?.[statusMeta.key];
   const markdownBody = await convertPageToMarkdown(pageId);
   const frontmatter = getFrontmatter({ title, date: dateValue, tags });
   const postContent = `${frontmatter}${markdownBody}\n`;
@@ -249,7 +278,7 @@ const publishPost = async (page) => {
     sha: sha ?? undefined,
   });
 
-  await updatePageStatus(pageId, statusProperty?.type);
+  await updatePageStatus(pageId, statusProperty?.type ?? statusMeta.type);
   console.log(`Published "${title}" to ${filePath}`);
 };
 
