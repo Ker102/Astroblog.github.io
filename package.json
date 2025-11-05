@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check:notion": "node scripts/check-notion.cjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.9",
