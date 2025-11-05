@@ -4,17 +4,26 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: true
     steps:
-      - name: Check out your repository using git
+      - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install, build, and deploy
         uses: withastro/action@v2
         with:
-          # path: . # The root location of your Astro project inside the repository. (optional)
-          # node-version: 20 # The specific version of Node.js to use. (optional)
-          # package-manager: npm@latest # The Node.js package manager to use. (optional)
+          node-version: 20
+          package-manager: npm@latest
