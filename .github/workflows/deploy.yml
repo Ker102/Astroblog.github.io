@@ -21,7 +21,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy-pages.outputs.page_url }}
     concurrency:
       group: "pages"
       cancel-in-progress: true
@@ -31,9 +31,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install, build, and deploy
-        id: deploy
-        uses: withastro/action@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          package-manager: npm@latest
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
