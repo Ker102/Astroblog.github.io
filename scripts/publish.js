@@ -36,6 +36,15 @@ const STATUS_PROPERTY_ID = process.env.NOTION_STATUS_PROPERTY_ID;
 let resolvedStatusProperty;
 let supportsDatabasesQuery;
 
+if (STATUS_PROPERTY_ID) {
+  console.log(`NOTION_STATUS_PROPERTY_ID provided: ${STATUS_PROPERTY_ID}`);
+}
+if (process.env.NOTION_STATUS_PROPERTY_NAME) {
+  console.log(
+    `NOTION_STATUS_PROPERTY_NAME override: ${process.env.NOTION_STATUS_PROPERTY_NAME}`
+  );
+}
+
 const queryDatabase = async ({ database_id, filter, sorts, start_cursor, page_size }) => {
   if (supportsDatabasesQuery === undefined) {
     supportsDatabasesQuery = typeof notion.databases.query === "function";
