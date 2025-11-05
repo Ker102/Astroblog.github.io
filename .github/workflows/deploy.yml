@@ -13,6 +13,9 @@ jobs:
       contents: read
       pages: write
       id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     concurrency:
       group: "pages"
       cancel-in-progress: true
@@ -23,6 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install, build, and deploy
+        id: deploy
         uses: withastro/action@v2
         with:
           node-version: 20
