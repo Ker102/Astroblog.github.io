@@ -5,13 +5,19 @@ type Props = HTMLAttributes<'a'>;
 
 const { href = '', class: className, ...props } = Astro.props;
 
-const base = import.meta.env.BASE_URL;
+const baseRaw = import.meta.env.BASE_URL;
+const base =
+	baseRaw === '/'
+		? ''
+		: baseRaw.endsWith('/')
+			? baseRaw.slice(0, -1)
+			: baseRaw;
 const addBase = (target: string) => {
 	if (!target || target.startsWith('http') || target.startsWith('mailto:') || target.startsWith('#')) {
 		return target;
 	}
 	const normalised = target.startsWith('/') ? target.slice(1) : target;
-	return `${base}${normalised}`;
+	return `${base}/${normalised}`;
 };
 
 const resolvedHref = addBase(href);
