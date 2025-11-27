@@ -19,6 +19,7 @@ At its core, a database is an organized collection of data. Think of it as a hig
 ## The Three Main Players
 
 ### 1. Relational Databases (SQL)
+![SQL Database Visual](/Astroblogauto/images/sql-visual.png)
 SQL (Structured Query Language) databases are like strict accountants. They store data in **tables** with rows and columns. Every piece of data must fit a undefined structure (schema).
 
 **Best for**: Financial systems, user accounts, inventory management where consistency is key.
@@ -44,6 +45,7 @@ erDiagram
 ```
 
 ### 2. NoSQL Databases
+![NoSQL Database Visual](/Astroblogauto/images/nosql-visual.png)
 NoSQL databases are the creative artists. They are flexible and don't require a rigid schema. Data is often stored as **documents** (JSON-like), key-value pairs, or graphs.
 
 **Best for**: Content management systems, real-time big data, flexible product catalogs.
@@ -62,6 +64,7 @@ graph LR
 ```
 
 ### 3. Vector Databases (The AI Era)
+![Vector Database Visual](/Astroblogauto/images/vector-visual.png)
 This is where things get exciting. Vector databases don't just store text; they store **meaning**. They convert data (text, images, audio) into high-dimensional vectors (lists of numbers).
 
 When you search a vector DB, you aren't looking for an exact keyword match. You are looking for **semantic similarity**.
