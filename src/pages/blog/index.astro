@@ -23,10 +23,55 @@ const postsWithContent = await Promise.all(
 	<head>
 		<BaseHead title={`${SITE_TITLE} — Blog`} description={SITE_DESCRIPTION} />
 		<style>
-			main {
-				width: min(960px, 100%);
+			.layout-container {
+				display: flex;
+				gap: 3rem;
+				width: min(1200px, 100%);
 				margin: 0 auto;
 				padding: clamp(1.5rem, 4vw, 3rem);
+				align-items: flex-start;
+			}
+			aside {
+				width: 280px;
+				flex-shrink: 0;
+				position: sticky;
+				top: 2rem;
+				background: rgba(var(--paper), 0.8);
+				padding: 1.5rem;
+				border-radius: 16px;
+				border: 1px solid rgba(var(--gray), 0.1);
+				backdrop-filter: blur(10px);
+			}
+			aside h3 {
+				margin-top: 0;
+				font-size: 1.2rem;
+				margin-bottom: 1rem;
+				border-bottom: 2px solid var(--accent);
+				padding-bottom: 0.5rem;
+				display: inline-block;
+			}
+			aside ul {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			aside li {
+				margin-bottom: 0.75rem;
+			}
+			aside a {
+				color: var(--gray-dark);
+				text-decoration: none;
+				font-size: 0.95rem;
+				transition: color 0.2s;
+				display: block;
+				line-height: 1.4;
+			}
+			aside a:hover {
+				color: var(--accent);
+			}
+			main {
+				flex-grow: 1;
+				min-width: 0; /* Prevent flex overflow */
 			}
 			.posts {
 				display: flex;
@@ -41,7 +86,7 @@ const postsWithContent = await Promise.all(
 				padding: clamp(2rem, 6vw, 3.5rem);
 				box-shadow: var(--shadow);
 				border: 1px solid rgba(var(--gray), 0.12);
-				scroll-margin-top: 6.5rem;
+				scroll-margin-top: 2rem;
 			}
 			article h2 {
 				margin: 0 0 0.75rem;
@@ -76,9 +121,15 @@ const postsWithContent = await Promise.all(
 			article :global(a:hover) {
 				text-decoration: underline;
 			}
-			@media (max-width: 720px) {
-				main {
-					padding: clamp(1.5rem, 6vw, 2.5rem) clamp(1rem, 4vw, 1.5rem);
+			@media (max-width: 900px) {
+				.layout-container {
+					flex-direction: column-reverse; /* Content first on mobile */
+					padding: 1rem;
+				}
+				aside {
+					width: 100%;
+					position: static;
+					margin-bottom: 2rem;
 				}
 				article {
 					padding: clamp(1.5rem, 8vw, 2.5rem);
@@ -88,22 +139,34 @@ const postsWithContent = await Promise.all(
 	</head>
 	<body>
 		<Header />
-		<main>
-			<section class="posts">
-				{
-					postsWithContent.map(({ id, data, Content }) => (
-						<article id={id}>
-							<h2>{data.title}</h2>
-							<p class="meta">
-								<FormattedDate date={data.pubDate} />
-								{data.tags?.length ? ` · ${data.tags.join(', ')}` : ''}
-							</p>
-							<Content />
-						</article>
-					))
-				}
-			</section>
-		</main>
+		<div class="layout-container">
+			<aside>
+				<h3>Recent Posts</h3>
+				<ul>
+					{posts.map((post) => (
+						<li>
+							<a href={`#${post.slug}`}>{post.data.title}</a>
+						</li>
+					))}
+				</ul>
+			</aside>
+			<main>
+				<section class="posts">
+					{
+						postsWithContent.map(({ slug, data, Content }) => (
+							<article id={slug}>
+								<h2>{data.title}</h2>
+								<p class="meta">
+									<FormattedDate date={data.pubDate} />
+									{data.tags?.length ? ` · ${data.tags.join(', ')}` : ''}
+								</p>
+								<Content />
+							</article>
+						))
+					}
+				</section>
+			</main>
+		</div>
 		<Footer />
 	</body>
 </html>
