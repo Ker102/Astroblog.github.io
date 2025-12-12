@@ -16,7 +16,7 @@
     "@astrojs/sitemap": "^3.6.0",
     "@notionhq/client": "^5.3.0",
     "@octokit/rest": "^22.0.1",
-    "astro": "^5.15.3",
+    "astro": "^5.16.5",
     "notion-to-md": "^3.1.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
